@@ -1,0 +1,139 @@
+﻿@model List<Quizzer.Models.Team>
+@{
+    ViewBag.Title = "Chat";
+}
+<h2>Chat</h2>
+<div class="container">
+
+    <div class="teams">
+        @if (Model != null && Model.Any())
+        {
+
+            <h2>Select a team</h2>
+            foreach (var team in Model)
+            {
+                <div class="panel">
+                    <h3>@team.Name</h3>
+                </div>
+            }
+        }
+    </div>
+
+    <h3 class="chosenteam"></h3>
+    <input type="text" id="message"/>
+
+    <ul class="teamplayers"></ul>
+
+    <input type="button" id="sendmessage" value="Send"/>
+    <input type="button" id="startquiz" value="Start"/>
+    <input type="button" id="clearteams" value="Clear teams"/>
+
+    <input type="text" id="teamname"/>
+    <input type="button" id="createteam" value="Create Team"/>
+
+    <input type="hidden" id="displayname"/>
+    <input type="hidden" id="teamname"/>
+
+    <input hidden type="text" id="playername" />
+    <input hidden type="button" id="addplayer" value="Add player"/>
+
+    <ul id="discussion"></ul>
+</div>
+
+@section scripts {
+<script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
+<script src="~/signalr/hubs"></script>
+
+    <script>
+        $(function () {
+
+            $('#displayname').val(prompt('Enter your name:', ''));
+
+            var chat = $.connection.gameHub;
+
+            chat.client.addPlayerToTeam = function (name) {
+                $('#discussion').append('<li><strong>' + name + '</li>');
+            };
+
+
+            chat.client.addNewMessageToPage = function (name, message) {
+
+                $('#discussion').append('<li><strong>' + htmlEncode(name)
+                    + '</strong>: ' + htmlEncode(message) + '</li>');
+            };
+
+            chat.client.nextQuestion = (quiz) => {
+                $('#discussion').append('<h3><strong>' + quiz.question
+                    + '</h3>');
+            }
+
+            chat.client.newTeam = (team) => {
+                $('.teams').append('<h3><strong>' + team
+                    + '</h3>');
+            }
+
+            chat.client.resetTeams = () => {
+                $('.teams').empty();
+            }
+
+            chat.client.addPlayerToTeam = (players) => {
+                $('.teamplayers').empty();
+                $.each(players, function() {
+                    $('.teamplayers').append('<li><strong>' + this.Name + '</li>');
+                });
+            }
+          
+
+            $('#message').focus();
+
+            $.connection.hub.start().done(function () {
+
+                $("#createteam").click(() => {
+                    chat.server.addTeam($("#teamname").val());
+                    chat.server.joinTeam($("#teamname").val(), $("#playername").val());
+                    $("#teamname").val($(this).text());
+                    teamSelected($(this).text());
+                });
+
+                $("#startquiz").click(function () {
+                    chat.server.startGame();
+                });
+
+                $("#sendmessage").click(function () {
+                    chat.server.addTeam($("#displayname").val());
+                });
+
+                $("#clearteams").click(function () {
+                    chat.server.clearTeams();
+                });
+
+                $(document).on('click', ".teams h3", function () {
+                    $(".chosenteam").html($(this).text());
+                    chat.server.joinTeam($(".chosenteam").text(), $("#displayname").val());
+                    teamSelected($(this).text());
+                });
+
+                $("#addplayer").click(function () {
+                    chat.server.joinTeam($(".chosenteam").text(), $("#playername").val());
+                });
+            });
+
+        });
+
+        function teamSelected(name) {
+            $(".teamname").html(name);
+            $(".teams").fadeOut();
+            $("#teamname").fadeOut();
+            $("#createteam").fadeOut();
+            $("#playername").fadeIn();
+            $("#addplayer").fadeIn();
+        }
+
+        function htmlEncode(value) {
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+
+
+        }
+    </script>
+}
