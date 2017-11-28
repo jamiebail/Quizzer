@@ -37,39 +37,47 @@
     <input hidden type="text" id="playername" />
     <input hidden type="button" id="addplayer" value="Add player"/>
 
-    <ul id="discussion"></ul>
+    <div id="question"></div>
 </div>
 
 @section scripts {
-<script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
-<script src="~/signalr/hubs"></script>
+    <script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
+    <script src="~/signalr/hubs"></script>
 
     <script>
-        $(function () {
+        $(function() {
 
             $('#displayname').val(prompt('Enter your name:', ''));
 
             var chat = $.connection.gameHub;
 
-            chat.client.addPlayerToTeam = function (name) {
-                $('#discussion').append('<li><strong>' + name + '</li>');
+            chat.client.addPlayerToTeam = function(name) {
+                $('#question').append('<li><strong>' + name + '</li>');
             };
 
 
-            chat.client.addNewMessageToPage = function (name, message) {
+            chat.client.addNewMessageToPage = function(name, message) {
 
-                $('#discussion').append('<li><strong>' + htmlEncode(name)
-                    + '</strong>: ' + htmlEncode(message) + '</li>');
+                $('#question').append('<li><strong>' +
+                    htmlEncode(name) +
+                    '</strong>: ' +
+                    htmlEncode(message) +
+                    '</li>');
             };
 
             chat.client.nextQuestion = (quiz) => {
-                $('#discussion').append('<h3><strong>' + quiz.question
-                    + '</h3>');
+                $('#question').empty();
+                $('#question').append(`<h3><strong>${quiz.question}'</h3>`);
+                $('#question').append('<div class="answers">');
+                $.each(quiz.incorrect_answers,
+                    function() {
+                        $('#question').append(`<div class="answer-panel panel"><div class="answer"><h4>${this}</h4></div></div>`);
+                    });
+                $('#question').append("</div>");
             }
 
             chat.client.newTeam = (team) => {
-                $('.teams').append('<h3><strong>' + team
-                    + '</h3>');
+                $('.teams').append('<h3><strong>' + team + '</h3>');
             }
 
             chat.client.resetTeams = () => {
@@ -78,43 +86,51 @@
 
             chat.client.addPlayerToTeam = (players) => {
                 $('.teamplayers').empty();
-                $.each(players, function() {
-                    $('.teamplayers').append('<li><strong>' + this.Name + '</li>');
-                });
+                $.each(players,
+                    function() {
+                        $('.teamplayers').append('<li><strong>' + this.Name + '</li>');
+                    });
             }
-          
+
 
             $('#message').focus();
 
-            $.connection.hub.start().done(function () {
+            $.connection.hub.start().done(function() {
+
+                $(document).on('click',
+                    '.answer',
+                    function() {
+                        chat.server.answer($(".chosenteam").text(), $(this).children('h4').text());
+                    });
 
                 $("#createteam").click(() => {
-                    chat.server.addTeam($("#teamname").val());
-                    chat.server.joinTeam($("#teamname").val(), $("#playername").val());
-                    $("#teamname").val($(this).text());
+                    chat.server.addTeam($("#teamname").val(), $("#displayname").val());
+                    $(".chosenteam").html($("#teamname").val());
                     teamSelected($(this).text());
                 });
 
-                $("#startquiz").click(function () {
+                $("#startquiz").click(function() {
                     chat.server.startGame();
                 });
 
-                $("#sendmessage").click(function () {
-                    chat.server.addTeam($("#displayname").val());
+                $("#sendmessage").click(function() {
+                    chat.server.answer($(".chosenteam").text(), $("#message").val());
                 });
 
-                $("#clearteams").click(function () {
+                $("#clearteams").click(function() {
                     chat.server.clearTeams();
                 });
 
-                $(document).on('click', ".teams h3", function () {
-                    $(".chosenteam").html($(this).text());
-                    chat.server.joinTeam($(".chosenteam").text(), $("#displayname").val());
-                    teamSelected($(this).text());
-                });
+                $(document).on('click',
+                    ".teams h3",
+                    function() {
+                        $(".chosenteam").html($(this).text());
+                        chat.server.joinTeam($(".chosenteam").text(), $("#displayname").val());
+                        teamSelected($(this).text());
+                    });
 
-                $("#addplayer").click(function () {
-                    chat.server.joinTeam($(".chosenteam").text(), $("#playername").val());
+                $("#addplayer").click(function() {
+                    chat.server.addPlayerNameToTeam($(".chosenteam").text(), $("#playername").val());
                 });
             });
 

@@ -22,3 +22,38 @@ select,
 textarea {
     max-width: 280px;
 }
+
+.answer-panel {
+    display: inline-block;
+    width: 50%;
+    margin-bottom: 0px;
+    margin-top: 0;
+    padding: 3px;
+    margin-bottom: -5px;
+}
+
+.answer {
+    height: 100px;
+    text-align: center;
+    display: table;
+    width: 100%;
+    border: 1px solid #0182e0;
+    background-color: #0094ff;
+    border-radius: 3px;
+}
+
+.answer h4 {
+    display: table-cell;
+    vertical-align: middle;
+    padding: 5px;
+    color: white;
+    word-break: break-all;
+}
+
+.answer strong {
+    word-break: break-all
+}
+
+.answer:hover {
+    background-color: #32a7fa
+}

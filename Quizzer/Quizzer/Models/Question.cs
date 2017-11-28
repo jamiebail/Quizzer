@@ -13,5 +13,6 @@ namespace Quizzer.Models
         public string correct_answer { get; set; }
         public List<string> incorrect_answers { get; set; }
         public int Answered { get; set; }
+        public List<string> Answers { get; set; }
     }
 }
