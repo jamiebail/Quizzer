@@ -33,6 +33,20 @@ namespace Quizzer.Controllers
         public async Task<ActionResult> Chat()
         {
             await QuizManager.GetQuestions();
+            return View();
+        }
+
+        public PartialViewResult ReturnView(string view)
+        {
+            if (view == "_TeamsPartial")
+            {
+                return PartialView($"Partials/{view}", QuizManager.Teams);
+            }
+            return PartialView($"Partials/{view}");
+        }
+
+        public async Task<ActionResult> Teams()
+        {
             return View(QuizManager.Teams);
         }
     }

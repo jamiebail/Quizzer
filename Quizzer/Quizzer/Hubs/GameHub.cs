@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +24,6 @@ namespace Quizzer.Hubs
                     var user = team.Players.FirstOrDefault(player => player.ConnectionId == Context.ConnectionId);
                     if (user != null)
                     {
-
                         team.Players.Remove(user);
                     }
                     UpdateTeams(team);
@@ -68,9 +69,23 @@ namespace Quizzer.Hubs
         public void Answer(string team, string answer)
         {
             QuizManager.CurrentQuestion.Answered++;
-            if (QuizManager.CurrentQuestion.Answered == QuizManager.Teams.Count)
+
+            var teamAnswer = QuizManager.CurrentQuestion.TeamAnswers.FirstOrDefault(t => t.TeamName == team);
+            if (teamAnswer == null)
+                QuizManager.CurrentQuestion.TeamAnswers.Add(new TeamAnswer(team, answer));
+            else
+                teamAnswer.Answer = answer;
+
+            if (QuizManager.CurrentQuestion.TeamAnswers.Count == QuizManager.Teams.Count)
             {
-                NextQuestion(QuizManager.Quiz.results[QuizManager.Quiz.results.IndexOf(QuizManager.CurrentQuestion) + 1]);
+                if (QuizManager.Quiz.results.IndexOf(QuizManager.CurrentQuestion) != QuizManager.Quiz.results.Count - 1)
+                {
+                    NextQuestion(QuizManager.Quiz.results[QuizManager.Quiz.results.IndexOf(QuizManager.CurrentQuestion) + 1]);
+                }
+                else
+                {
+                    Clients.All.gameOver();
+                }
             }
         }
 
@@ -82,6 +97,13 @@ namespace Quizzer.Hubs
 
         public void StartGame()
         {
+            var task = Task.Factory.StartNew(QuizManager.GetQuestions);
+            GlobalPartialView("_QuizPartial");
+            while (task.Status != TaskStatus.RanToCompletion)
+            {
+                
+            }
+            Thread.Sleep(700);
             NextQuestion(QuizManager.Quiz.results.First());
         }
 
@@ -123,7 +145,7 @@ namespace Quizzer.Hubs
                 {
                     Name = player
                 });
-                
+
                 Groups.Add(Context.ConnectionId, team);
                 var players = t.Players;
                 Thread.Sleep(300);
@@ -134,6 +156,21 @@ namespace Quizzer.Hubs
         public void UpdateTeams(Team t)
         {
             Clients.Group(t.Name).addPlayerToTeam(t.Players);
+        }
+
+        public void SinglePartialView(string view, string connection)
+        {
+            Clients.Client(connection).getView(view);
+        }
+
+        public void GroupPartialView(string view, string group)
+        {
+            Clients.Group(group).getView(view);
+        }
+
+        public void GlobalPartialView(string view)
+        {
+            Clients.All.getView(view);
         }
     }
 }

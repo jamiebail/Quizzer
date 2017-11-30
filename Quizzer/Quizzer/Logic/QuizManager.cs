@@ -37,6 +37,15 @@ namespace Quizzer.Logic
                     answers.Insert(position, question.correct_answer);
                     question.Answers = answers;
                 }
+                else
+                {
+                    question.Answers = new List<string>()
+                    {
+                        "True",
+                        "False"
+                    };
+                }
+
             });
         }
     }

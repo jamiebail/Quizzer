@@ -1,43 +1,24 @@
-﻿@model List<Quizzer.Models.Team>
+﻿
 @{
     ViewBag.Title = "Chat";
 }
-<h2>Chat</h2>
 <div class="container">
 
-    <div class="teams">
-        @if (Model != null && Model.Any())
-        {
-
-            <h2>Select a team</h2>
-            foreach (var team in Model)
-            {
-                <div class="panel">
-                    <h3>@team.Name</h3>
-                </div>
-            }
-        }
-    </div>
-
-    <h3 class="chosenteam"></h3>
-    <input type="text" id="message"/>
-
+    <h2 class="chosenteam"></h2>
+    
     <ul class="teamplayers"></ul>
 
-    <input type="button" id="sendmessage" value="Send"/>
     <input type="button" id="startquiz" value="Start"/>
     <input type="button" id="clearteams" value="Clear teams"/>
 
-    <input type="text" id="teamname"/>
-    <input type="button" id="createteam" value="Create Team"/>
+    
 
     <input type="hidden" id="displayname"/>
     <input type="hidden" id="teamname"/>
-
-    <input hidden type="text" id="playername" />
-    <input hidden type="button" id="addplayer" value="Add player"/>
-
+    
+    <div hidden class="gameOver"><h2>Game Over!</h2></div>
     <div id="question"></div>
+
 </div>
 
 @section scripts {
@@ -46,9 +27,6 @@
 
     <script>
         $(function() {
-
-            $('#displayname').val(prompt('Enter your name:', ''));
-
             var chat = $.connection.gameHub;
 
             chat.client.addPlayerToTeam = function(name) {
@@ -56,28 +34,26 @@
             };
 
 
-            chat.client.addNewMessageToPage = function(name, message) {
-
-                $('#question').append('<li><strong>' +
-                    htmlEncode(name) +
-                    '</strong>: ' +
-                    htmlEncode(message) +
-                    '</li>');
-            };
-
             chat.client.nextQuestion = (quiz) => {
+                $('#question').hide();
                 $('#question').empty();
                 $('#question').append(`<h3><strong>${quiz.question}'</h3>`);
                 $('#question').append('<div class="answers">');
-                $.each(quiz.incorrect_answers,
-                    function() {
+                $.each(quiz.Answers,
+                    function () {
                         $('#question').append(`<div class="answer-panel panel"><div class="answer"><h4>${this}</h4></div></div>`);
                     });
                 $('#question').append("</div>");
+                $('#question').fadeIn();
             }
 
             chat.client.newTeam = (team) => {
                 $('.teams').append('<h3><strong>' + team + '</h3>');
+            }
+
+            chat.client.gameOver = () => {
+                $('#question').hide();
+                $(".gameOver").fadeIn();
             }
 
             chat.client.resetTeams = () => {
@@ -101,6 +77,9 @@
                     '.answer',
                     function() {
                         chat.server.answer($(".chosenteam").text(), $(this).children('h4').text());
+                        $(".answer").removeClass("selected");
+                        $(this).addClass("selected");
+
                     });
 
                 $("#createteam").click(() => {
@@ -125,7 +104,7 @@
                     ".teams h3",
                     function() {
                         $(".chosenteam").html($(this).text());
-                        chat.server.joinTeam($(".chosenteam").text(), $("#displayname").val());
+                        chat.server.joinTeam($(this).text(), $("#displayname").val());
                         teamSelected($(this).text());
                     });
 

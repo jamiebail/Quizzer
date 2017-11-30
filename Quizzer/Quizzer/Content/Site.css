@@ -42,6 +42,10 @@ textarea {
     border-radius: 3px;
 }
 
+h2 {
+    text-align: center;
+}
+
 .answer h4 {
     display: table-cell;
     vertical-align: middle;
@@ -57,3 +61,11 @@ textarea {
 .answer:hover {
     background-color: #32a7fa
 }
+
+.selected {
+    background-color: #f39c12;
+    border: 1px solid #f39c12;
+}
+    .selected:hover {
+        background-color: #f39c12;
+    }

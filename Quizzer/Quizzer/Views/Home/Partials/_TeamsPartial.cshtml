@@ -1,0 +1,117 @@
+﻿@model List<Quizzer.Models.Team>
+@{
+    ViewBag.Title = "Teams";
+}
+
+<h2>Teams</h2>
+
+
+<div class="teams">
+    @if (Model != null && Model.Any())
+    {
+
+        <h2>Select a team</h2>
+        foreach (var team in Model)
+        {
+            <div class="panel">
+                <h3>@team.Name</h3>
+            </div>
+        }
+    }
+</div>
+
+<h2 class="teamname"></h2>
+<input type="text" id="teamname"/>
+<input type="button" id="createteam" value="Create Team"/>
+
+<ul class="teamplayers"></ul>
+
+<input type="button" id="startquiz" value="Start"/>
+
+<input hidden type="text" id="playername" />
+<input hidden type="button" id="addplayer" value="Add player"/>
+
+@section scripts {
+    <script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+
+    <script>
+        $(function() {
+            var chat = $.connection.gameHub;
+
+
+            $('#displayname').val();
+
+
+            chat.client.addPlayerToTeam = function(name) {
+                $('#question').append('<li><strong>' + name + '</li>');
+            };
+           
+            chat.client.newTeam = (team) => {
+                $('.teams').append('<h3><strong>' + team + '</h3>');
+            }
+
+            chat.client.getView = (view) => {
+                $.ajax({
+                    type: 'GET',
+                    url: '/Home/ReturnView',
+                    data: { view: view },
+                    cache: false,
+                    success: function(result) {
+                        $(".lightbox").html(result);
+                    }
+                });
+            }
+           
+            chat.client.resetTeams = () => {
+                $('.teams').empty();
+            }
+
+            chat.client.addPlayerToTeam = (players) => {
+                $('.teamplayers').empty();
+                $.each(players,
+                    function() {
+                        $('.teamplayers').append('<li><strong>' + this.Name + '</li>');
+                    });
+            }       
+
+            $.connection.hub.start().done(function() {
+
+               
+                $("#createteam").click(() => {
+                    chat.server.addTeam($("#teamname").val(), $("#displayname").val());
+                    teamSelected($("#teamname").val());
+                });              
+
+                $(document).on('click',
+                    ".teams h3",
+                    function() {
+                        $(".chosenteam").html($(this).text());
+                        chat.server.joinTeam($(this).text(), $("#displayname").val());
+                        teamSelected($(this).text());
+                    });
+
+                $("#addplayer").click(function() {
+                    chat.server.addPlayerNameToTeam($(".chosenteam").text(), $("#playername").val());
+                });
+            });
+
+        });
+
+        function teamSelected(name) {
+            $(".teamname").html(name);
+            $(".teams").fadeOut();
+            $("#teamname").fadeOut();
+            $("#createteam").fadeOut();
+            $("#playername").fadeIn();
+            $("#addplayer").fadeIn();
+        }
+
+        function htmlEncode(value) {
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+
+
+        }
+    </script>
+}

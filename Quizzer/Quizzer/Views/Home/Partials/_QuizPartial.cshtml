@@ -1,34 +1,38 @@
-﻿@{
-    ViewBag.Title = "Home Page";
+﻿
+@{
+    ViewBag.Title = "Chat";
 }
+<div class="container">
 
-
-
-<div class="lightbox panel">
+    <h2 class="chosenteam"></h2>
+    
+    <input type="button" id="clearteams" value="Clear teams"/>
+    
+    <div hidden class="gameOver"><h2>Game Over!</h2></div>
+    <div id="question"></div>
 
 </div>
 
-@section Scripts{
+@section scripts {
     <script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
     <script src="~/signalr/hubs"></script>
+
     <script>
         $(function() {
-           
-                $.ajax({
-                    type: 'GET',
-                    url: '/Home/ReturnView',
-                    data: { view: "_TeamsPartial" },
-                    cache: false,
-                    success: function(result) {
-                        $(".lightbox").html(result);
-                    }
-                });
-
             var chat = $.connection.gameHub;
 
+            chat.client.addPlayerToTeam = function(name) {
+                $('#question').append('<li><strong>' + name + '</li>');
+            };
 
 
-            $('#displayname').val();
+            chat.client.addNewMessageToPage = function(name, message) {
+                $('#question').append('<li><strong>' +
+                    htmlEncode(name) +
+                    '</strong>: ' +
+                    htmlEncode(message) +
+                    '</li>');
+            };
 
             chat.client.nextQuestion = (quiz) => {
                 $('#question').hide();
@@ -43,32 +47,15 @@
                 $('#question').fadeIn();
             }
 
+            chat.client.newTeam = (team) => {
+                $('.teams').append('<h3><strong>' + team + '</h3>');
+            }
+
             chat.client.gameOver = () => {
                 $('#question').hide();
                 $(".gameOver").fadeIn();
             }
 
-
-            chat.client.addPlayerToTeam = function(name) {
-                $('#question').append('<li><strong>' + name + '</li>');
-            };
-           
-            chat.client.newTeam = (team) => {
-                $('.teams').append('<h3><strong>' + team + '</h3>');
-            }
-
-            chat.client.getView = (view) => {
-                $.ajax({
-                    type: 'GET',
-                    url: '/Home/ReturnView',
-                    data: { view: view },
-                    cache: false,
-                    success: function(result) {
-                        $(".lightbox").html(result);
-                    }
-                });
-            }
-           
             chat.client.resetTeams = () => {
                 $('.teams').empty();
             }
@@ -79,7 +66,10 @@
                     function() {
                         $('.teamplayers').append('<li><strong>' + this.Name + '</li>');
                     });
-            }       
+            }
+
+
+            $('#message').focus();
 
             $.connection.hub.start().done(function() {
 
@@ -92,14 +82,23 @@
 
                     });
 
-                $(document).on('click', "#startquiz", function() {
-                    chat.server.startGame();
-                });
-               
                 $("#createteam").click(() => {
                     chat.server.addTeam($("#teamname").val(), $("#displayname").val());
-                    teamSelected($("#teamname").val());
-                });              
+                    $(".chosenteam").html($("#teamname").val());
+                    teamSelected($(this).text());
+                });
+
+                $("#startquiz").click(function() {
+                    chat.server.startGame();
+                });
+
+                $("#sendmessage").click(function() {
+                    chat.server.answer($(".chosenteam").text(), $("#message").val());
+                });
+
+                $("#clearteams").click(function() {
+                    chat.server.clearTeams();
+                });
 
                 $(document).on('click',
                     ".teams h3",
@@ -130,6 +129,6 @@
             return encodedValue;
 
 
-        };
+        }
     </script>
 }
